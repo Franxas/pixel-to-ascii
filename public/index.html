@@ -4,15 +4,25 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Sketch</title>
+    <title>SPA</title>
 
     <link rel="stylesheet" type="text/css" href="style.css">
 
     <script src="libraries/p5.min.js"></script>
     <script src="libraries/p5.sound.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.11.11/lib/p5.min.js"></script>
   </head>
-
   <body>
-    <script src="sketch.js"></script>
+
+    <nav clas="nav">
+      <a class="nav-link" href="/" data-link>home</a>
+      <a class="nav-link" href="/posts" data-link>posts</a>
+      <a class="nav-link" href="/projects" data-link>projects</a>
+    </nav>
+    <div id="app"></div>
+
+    <script type="module" src="/static/js/index.js"></script>
+    <script type="module" src="/static/js/p5/sketch.js"></script>
+    
   </body>
 </html>

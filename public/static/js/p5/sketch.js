@@ -1,0 +1,174 @@
+export function sketch(p) {
+  const size = {w: 400 * 2, h: 400};
+  let video;
+  let vals = [];
+  let slider;
+  let charArr;
+
+  p.setup = () => {
+
+    p.createCanvas(size.w, size.h + 48).parent('app');
+    video = p.createCapture(p.VIDEO, {flipped:true});
+    video.size(74, 50);
+    video.hide();
+
+    slider = p.createSlider(-2, 3, 0, 0);
+    slider.position(10, 440);
+
+    const fileInput = p.createFileInput(handleFile);
+    fileInput.position(10, 410);
+
+    const saveButton = p.createButton('snapshot');
+    saveButton.mousePressed(saveSnapshot);
+    saveButton.position(10, 470);
+
+  }
+
+  p.draw = () => {
+
+    p.background(255);
+    
+    //let videoImg = image(video, 3, 3, size.w / 2, size.h);
+    vals = biasedDivision(10, slider.value());
+    charArr = [];
+
+    let x = 0;
+    let y = 0;
+
+    // transale each pixel - for every px
+    for (let i = 0; i < (74 * 48); i++) {
+
+      charArr.push(selCharFromPixelValue(x, y, vals));
+      
+      x++
+      if (x > (74 - 1)) {
+        x = 0;
+        y++;
+        charArr.push("\n"); // line break to match row column distribution
+      }
+    }
+
+    charArr = charArr.join("");
+
+    const fontSize = 8.6;
+    p.textFont("monospace");
+    p.textSize(fontSize);
+    p.textLeading(fontSize * 0.95);
+    p.text(charArr, 10, 15);
+  }
+
+  function biasedDivision(parts = 10, power = 1) {
+    
+    const weights = [];
+    for (let i = 0; i <= parts; i++) {
+      weights.push(Math.pow(parts + 1 - i, power));
+    }
+
+    // Step 2: normalize so they sum to 1
+    const sum = weights.reduce((a, b) => a + b, 0);
+
+    let tempArr = weights.map(w => w / sum);
+    let resultArr = [];
+
+    for (let i = 0; i < tempArr.length; i++) {
+
+      resultArr.push(0);
+      for (let j = 0; j <= i; j++) {
+
+        resultArr[i] += tempArr[j];
+      }
+    }
+
+    return resultArr;
+  }
+
+  // loading a file
+  function handleFile(file) {
+
+    if (file.type === 'video') {
+      // Remove old video if any
+      if (video) {
+        video.stop?.();
+        video.remove();
+      }
+
+      // Create video from uploaded file
+      video = p.createVideo(file.data);
+
+      // Wait for metadata
+      video.elt.onloadedmetadata = () => {
+        video.size(74, 48);
+        video.hide();
+        video.attribute('controls', false);
+        video.loop();
+        video.play();
+        video.volume(0);
+      };
+
+    } else {
+      console.log('Not a video file');
+    }
+  }
+
+  // pixel -> symbol
+  function selCharFromPixelValue(x, y, vals) {
+
+    let pixel = video.get(x, y);
+    pixel.pop();
+
+    let pixelVal = pixel.reduce((acc, elem) => acc + elem, 0) / 765;
+    let pixelChar;
+
+
+    if (pixelVal < vals[0]) {
+      pixelChar = '0';
+    } else if (pixelVal < vals[1]) {
+      pixelChar = 'O';
+    } else if (pixelVal < vals[2]) {
+      pixelChar = 'U';
+    } else if (pixelVal < vals[3]) {
+      pixelChar = '7';
+    } else if (pixelVal < vals[4]) {
+      pixelChar = '/';
+    } else if (pixelVal < vals[5]) {
+      pixelChar = 'º';
+    } else if (pixelVal < vals[6]) {
+      pixelChar = '>';
+    } else if (pixelVal < vals[7]) {
+      pixelChar = '~';
+    } else if (pixelVal < vals[8]) {
+      pixelChar = '.';
+    } else {
+      pixelChar = ' ';
+    }
+
+    return pixelChar;
+  }
+
+  async function saveSnapshot() {
+
+    if(charArr.length === 0) {
+      saveSnapshot();
+    }
+
+      const snapshot = {
+      data: charArr
+    }
+
+    console.log(snapshot);
+
+    const options = {
+
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(snapshot)
+    };
+
+    const response = await fetch('/api', options);
+    const data = await response.json();
+    console.log(data);
+
+  }
+}
